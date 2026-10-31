@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Consult Whoever</title>
     
-    <!-- MathJax translates LaTeX into beautiful equations -->
+    <!-- MathJax for Math Equations -->
     <script>
         MathJax = {
             tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
@@ -32,11 +32,12 @@
         .message.user { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .message.ai { background: white; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         
-        /* Image styling */
-        .visual-box { margin-top: 15px; width: 100%; overflow: hidden; border-radius: 8px;}
-        .visual-box img { width: 100%; height: auto; display: block; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.15);}
+        /* Styling for the charts and 3D boxes */
+        .visual-box { width: 100%; height: 350px; margin-top: 15px; display: flex; justify-content: center; align-items: center; background: #1e1e1e; border-radius: 8px; overflow: hidden; position: relative; }
+        .error-text { color: #ff6b6b; font-family: monospace; font-size: 14px; text-align: left; padding: 20px; }
     </style>
     
+    <!-- Load Chart.js and Three.js globally -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js"></script>
     
@@ -56,8 +57,8 @@
     <div id="avatar-container"></div>
 
     <div class="controls">
-        <input type="text" id="roleInput" placeholder="Role" value="friendly teacher" style="width: 120px;">
-        <input type="text" id="messageInput" placeholder="Ask me anything..." style="width: 350px;">
+        <input type="text" id="roleInput" placeholder="Role" value="data scientist" style="width: 120px;">
+        <input type="text" id="messageInput" placeholder="Ask for a chart or 3D graph..." style="width: 350px;">
         <button onclick="sendMessage()">Ask</button>
         <button id="micBtn" class="mic-btn" onclick="startListening()">🎤</button>
     </div>
@@ -118,14 +119,14 @@
                 let spokenText = fullReply;
                 let visualHtml = "";
 
-                // Clean up any code blocks
+                // Clean up markdown code blocks
                 fullReply = fullReply.replace(/```html/g, '').replace(/```/g, '');
 
-                // Check if the AI generated an image
-                if (fullReply.includes('<img src=')) {
-                    const parts = fullReply.split('<img');
+                // Split the text and the visual code
+                if (fullReply.includes('<div class="ai-visual">')) {
+                    const parts = fullReply.split('<div class="ai-visual">');
                     spokenText = parts[0].trim(); 
-                    visualHtml = '<img' + parts[1]; 
+                    visualHtml = '<div class="ai-visual" style="width:100%; height:100%;">' + parts[1]; 
                 }
 
                 // Set the text
@@ -135,12 +136,40 @@
                     MathJax.typesetPromise([aiMsgDiv]);
                 }
 
-                // Render the image if it exists
+                // Render the visual (Charts or 3D)
                 if (visualHtml) {
                     const visualContainer = document.createElement('div');
                     visualContainer.className = 'visual-box';
-                    visualContainer.innerHTML = visualHtml;
                     aiMsgDiv.appendChild(visualContainer);
+
+                    const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/g;
+                    let scriptsToRun = [];
+                    let match;
+                    
+                    while ((match = scriptRegex.exec(visualHtml)) !== null) {
+                        scriptsToRun.push(match[1]);
+                    }
+                    
+                    let cleanHtml = visualHtml.replace(scriptRegex, '');
+                    visualContainer.innerHTML = cleanHtml;
+                    
+                    scriptsToRun.forEach(scriptCode => {
+                        const script = document.createElement('script');
+                        script.text = `
+                            try { 
+                                ${scriptCode} 
+                            } catch(e) { 
+                                document.querySelectorAll('.visual-box')[document.querySelectorAll('.visual-box').length - 1].innerHTML = '<div class="error-text">Code Error:<br>' + e.message + '</div>';
+                            }
+                        `;
+                        visualContainer.appendChild(script);
+                    });
+
+                    setTimeout(() => {
+                        if (visualContainer.innerHTML.trim() === "" || (!visualContainer.querySelector('canvas') && !visualContainer.querySelector('svg'))) {
+                            visualContainer.innerHTML = '<div class="error-text">The AI forgot to write the code!<br>Ask it: "Please write the actual code for the chart."</div>';
+                        }
+                    }, 1000);
                 }
 
                 // Speak the text
