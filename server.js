@@ -24,39 +24,12 @@ app.post('/api/chat', async (req, res) => {
               - If you show math, use standard LaTeX formatting wrapped in single dollar signs (e.g., $x = 5$).
               - Speak like a normal human.
 
-              VISUAL RULES:
-              - If the user asks for a 3D visual, DO NOT generate complex models. ONLY use basic shapes (BoxGeometry, SphereGeometry, TorusGeometry, CylinderGeometry).
-              - You MUST output the visual inside <div class="ai-visual"> ... </div>.
-              - CRITICAL WARNING: You MUST include the <script> tags and the animate() function inside the visual block. If you forget the <script> tags, the app will fail and crash.
-              - YOU MUST USE THIS EXACT TEMPLATE FOR 3D (replace shape/color as needed):
-              
-              <div class="ai-visual">
-                <div id="3d-box" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center;"></div>
-                <script>
-                  const scene = new THREE.Scene();
-                  const camera = new THREE.PerspectiveCamera(75, 600 / 350, 0.1, 1000);
-                  const renderer = new THREE.WebGLRenderer();
-                  renderer.setSize(600, 350);
-                  document.getElementById('3d-box').appendChild(renderer.domElement);
-                  
-                  const geometry = new THREE.BoxGeometry(1, 1, 1);
-                  const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-                  const cube = new THREE.Mesh(geometry, material);
-                  scene.add(cube);
-                  
-                  camera.position.z = 3;
-                  
-                  function animate() {
-                    requestAnimationFrame(animate);
-                    cube.rotation.x += 0.01;
-                    cube.rotation.y += 0.01;
-                    renderer.render(scene, camera);
-                  }
-                  animate();
-                <\/script>
-              </div>
-              
-              Do not add extra scripts. Just use the template above.` 
+              VISUAL RULES (Very Important):
+              - If the user asks for a picture, photo, image, or visual explanation of a topic, you MUST generate an image using this exact format:
+                <img src="https://image.pollinations.ai/prompt/YOUR_SEARCH_TERM_HERE?width=600&height=350&nologo=true" style="max-width:100%; border-radius:8px; margin-top:10px;" />
+              - Replace YOUR_SEARCH_TERM_HERE with a highly descriptive, comma-separated list of keywords (e.g., "red,apple,fruit,realistic,photography").
+              - Do NOT use spaces in the image URL. Use commas or plus signs.
+              - ALWAYS write a short text explanation first, and then include the image.` 
             }
         ];
 
@@ -94,5 +67,5 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// ⚠️ THIS IS THE VERCEL EXPORT (No app.listen)
+// ⚠️ THIS IS THE VERCEL EXPORT
 module.exports = app;
