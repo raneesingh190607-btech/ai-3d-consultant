@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Consult Whoever</title>
+    
+    <!-- MathJax translates LaTeX into beautiful equations -->
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        #avatar-container { width: 100%; max-width: 500px; height: 300px; background: #e2e8f0; border-radius: 20px; overflow: hidden; position: relative; margin-bottom: 10px;}
+        
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        input, button { padding: 10px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; }
+        button { cursor: pointer; background: #007bff; color: white; border: none; }
+        button:hover { background: #0056b3; }
+        .mic-btn { background: #ef4444; border-radius: 50%; width: 45px; height: 45px; font-size: 20px; display: flex; justify-content: center; align-items: center;}
+        .mic-btn.active { background: #22c55e; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        
+        #chat-container { width: 100%; max-width: 750px; display: flex; flex-direction: column; gap: 20px; padding-bottom: 50px; }
+        
+        .message { padding: 15px 20px; border-radius: 12px; max-width: 85%; line-height: 1.6; font-size: 16px; }
+        .message.user { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .message.ai { background: white; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        
+        .visual-box { width: 100%; height: 350px; margin-top: 15px; display: flex; justify-content: center; align-items: center; background: #1e1e1e; border-radius: 8px; overflow: hidden; position: relative; }
+        .error-text { color: #ff6b6b; font-family: monospace; font-size: 14px; text-align: left; padding: 20px; }
+    </style>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js"></script>
+    
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js/+esm",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+        "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs"
+      }
+    }
+    </script>
+</head>
+<body>
+    <h2>Consult Whoever</h2>
+    
+    <div id="avatar-container"></div>
+
+    <div class="controls">
+        <input type="text" id="roleInput" placeholder="Role" value="friendly teacher" style="width: 120px;">
+        <input type="text" id="messageInput" placeholder="Ask me anything..." style="width: 350px;">
+        <button onclick="sendMessage()">Ask</button>
+        <button id="micBtn" class="mic-btn" onclick="startListening()">🎤</button>
+    </div>
+
+    <div id="chat-container"></div>
+
+    <script type="module">
+        import { TalkingHead } from "talkinghead";
+        import * as THREE_MODULE from 'three';
+
+        window.THREE = THREE_MODULE; 
+
+        const avatarContainer = document.getElementById('avatar-container');
+        const avatarUrl = 'https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/avatars/brunette.glb';
+        const chatContainer = document.getElementById('chat-container');
+        
+        let head = null;
+        let speechSynthesis = window.speechSynthesis; 
+
+        async function initAvatar() {
+            try {
+                head = new TalkingHead(avatarContainer, {
+                    ttsEndpoint: null, lipsyncModules: ["en"], cameraView: "upper", modelFPS: 30
+                });
+                await head.showAvatar({
+                    url: avatarUrl, body: 'F', avatarMood: 'neutral', ttsLang: "en-IN", lipsyncLang: 'en'
+                });
+            } catch (error) { console.error("Avatar Error:", error); }
+        }
+        initAvatar();
+
+        async function sendMessage() {
+            const role = document.getElementById('roleInput').value;
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            
+            speechSynthesis.cancel();
+            if (head) head.stopAnimation();
+
+            appendMessage('user', message);
+            messageInput.value = "";
+
+            const aiMsgDiv = appendMessage('ai', "Thinking...");
+
+            try {
+                const response = await fetch('http://localhost:3000/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message, role: role })
+                });
+                
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+
+                let fullReply = data.reply;
+                let spokenText = fullReply;
+                let visualHtml = "";
+
+                fullReply = fullReply.replace(/```html/g, '').replace(/```/g, '');
+
+                if (fullReply.includes('<div class="ai-visual">')) {
+                    const parts = fullReply.split('<div class="ai-visual">');
+                    spokenText = parts[0].trim(); 
+                    visualHtml = '<div class="ai-visual" style="width:100%; height:100%;">' + parts[1]; 
+                }
+
+                aiMsgDiv.innerHTML = `<p>${spokenText}</p>`;
+                
+                if (window.MathJax) {
+                    MathJax.typesetPromise([aiMsgDiv]);
+                }
+
+                if (visualHtml) {
+                    const visualContainer = document.createElement('div');
+                    visualContainer.className = 'visual-box';
+                    aiMsgDiv.appendChild(visualContainer);
+
+                    const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/g;
+                    let scriptsToRun = [];
+                    let match;
+                    
+                    while ((match = scriptRegex.exec(visualHtml)) !== null) {
+                        scriptsToRun.push(match[1]);
+                    }
+                    
+                    let cleanHtml = visualHtml.replace(scriptRegex, '');
+                    visualContainer.innerHTML = cleanHtml;
+                    
+                    scriptsToRun.forEach(scriptCode => {
+                        const script = document.createElement('script');
+                        script.text = `
+                            try { 
+                                ${scriptCode} 
+                            } catch(e) { 
+                                document.querySelectorAll('.visual-box')[document.querySelectorAll('.visual-box').length - 1].innerHTML = '<div class="error-text">3D Code Error:<br>' + e.message + '</div>';
+                            }
+                        `;
+                        visualContainer.appendChild(script);
+                    });
+
+                    setTimeout(() => {
+                        if (visualContainer.innerHTML.trim() === "" || !visualContainer.querySelector('canvas')) {
+                            visualContainer.innerHTML = '<div class="error-text">The AI forgot to write the 3D code!<br>Ask it: "Please write the actual JavaScript code for the 3D shape."</div>';
+                        }
+                    }, 1000);
+                }
+
+                // 🔊 FIXED SPEECH ENGINE (Removes asterisks, hashtags, and math code)
+                if (spokenText) {
+                    // Clean the text for the voice
+                    let textToSpeak = spokenText
+                        .replace(/[*#]/g, '') // Removes asterisks and hashtags
+                        .replace(/\\\[|\\\]|\\\(|\\\)|\\begin\{.*?\}|\\end\{.*?\}|\$|\\mathbf|\\frac/g, ''); // Removes math code
+                    
+                    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                    const voices = speechSynthesis.getVoices();
+                    const indianVoice = voices.find(v => v.lang === 'en-IN');
+                    if (indianVoice) utterance.voice = indianVoice;
+
+                    if (head) {
+                        head.playAnimation("dance"); 
+                        utterance.onend = () => head.stopAnimation();
+                    }
+                    speechSynthesis.speak(utterance);
+                }
+
+                window.scrollTo(0, document.body.scrollHeight);
+
+            } catch (error) {
+                aiMsgDiv.innerText = "Error: " + error.message;
+            }
+        }
+
+        function appendMessage(sender, text) {
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            div.innerText = text;
+            chatContainer.appendChild(div);
+            window.scrollTo(0, document.body.scrollHeight);
+            return div;
+        }
+
+        function startListening() {
+            const micBtn = document.getElementById('micBtn');
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { alert("Use Google Chrome."); return; }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-IN';
+            recognition.interimResults = false;
+
+            micBtn.classList.add('active');
+            recognition.start();
+
+            recognition.onresult = (event) => {
+                document.getElementById('messageInput').value = event.results[0][0].transcript;
+                micBtn.classList.remove('active');
+                sendMessage(); 
+            };
+            recognition.onerror = () => micBtn.classList.remove('active');
+        }
+
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        window.sendMessage = sendMessage;
+        window.startListening = startListening;
+    </script>
+</body>
+</html>

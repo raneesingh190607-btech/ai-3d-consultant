@@ -1,0 +1,29 @@
+# 🩺 Consult Whoever: AI 3D Virtual Consultant
+
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![NodeJS](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)
+![Three.js](https://img.shields.io/badge/ThreeJs-black?style=for-the-badge&logo=three.js&logoColor=white)
+![AI/ML](https://img.shields.io/badge/AI%2FML-B.Tech_CSE-blue?style=for-the-badge)
+
+A full-stack, voice-to-voice AI web application where users can consult an AI that adopts any professional persona (Doctor, Teacher, Chef, Lawyer). It features a 3D talking avatar, live speech-to-text, and the ability for the AI to dynamically write and render 3D animations and 2D charts based on the conversation.
+
+> **Developer:** Ranee Singh (2nd Year B.Tech CSE - AIML)
+
+## 🚀 Key Engineering Features
+*   **3D Talking Avatar:** Integrated `TalkingHead.js` and `Three.js` to render a lifelike 3D model that animates in sync with the AI's speech.
+*   **Dynamic Code Generation & Rendering:** The AI writes raw HTML/JS on the fly to render 2D charts (`Chart.js`) and 3D animations (`Three.js`) directly into the chat interface. 
+*   **Sandboxed Execution:** Built a custom DOM-injection pipeline with a `try/catch` wrapper to safely execute AI-generated JavaScript without crashing the main application.
+*   **Voice-to-Voice Pipeline:** Integrated browser `SpeechRecognition` for user input and `SpeechSynthesis` for AI output, complete with a regex pipeline to strip out Markdown and LaTeX artifacts before speaking.
+*   **Context-Aware Memory:** Backend maintains a sliding-window chat history (last 10 messages) to provide conversational context without hitting token limits.
+*   **MathJax Integration:** Automatically parses and renders complex LaTeX math equations provided by the AI into readable textbook formats.
+
+## 🛠️ Tech Stack
+*   **Frontend:** HTML5, CSS3, Vanilla JavaScript, Three.js, Chart.js, MathJax.
+*   **Backend:** Node.js, Express.js.
+*   **AI Engine:** Groq API (`openai/gpt-oss-120b` for ultra-fast inference).
+
+## ⚙️ Local Setup
+1. Clone the repo: 
+   ```bash
+   git clone https://github.com/yourusername/ai-3d-consultant.git
