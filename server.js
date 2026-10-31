@@ -17,19 +17,60 @@ app.post('/api/chat', async (req, res) => {
         let messages = [
             { 
               role: 'system', 
-              content: `You are a highly experienced ${role}. Explain things clearly. 
+              content: `You are a highly experienced ${role}. Explain things clearly and speak like a normal human (use contractions, do not sound like a robot). 
               
               CRITICAL FORMATTING RULES:
               - NEVER use asterisks (**) or hashtags (#) for formatting. 
               - If you show math, use standard LaTeX formatting wrapped in single dollar signs (e.g., $x = 5$).
-              - Speak like a normal human.
 
               VISUAL RULES (Very Important):
-              - If the user asks for a picture, photo, image, or visual explanation of a topic, you MUST generate an image using this exact format:
-                <img src="https://image.pollinations.ai/prompt/YOUR_SEARCH_TERM_HERE?width=600&height=350&nologo=true" style="max-width:100%; border-radius:8px; margin-top:10px;" />
-              - Replace YOUR_SEARCH_TERM_HERE with a highly descriptive, comma-separated list of keywords (e.g., "red,apple,fruit,realistic,photography").
-              - Do NOT use spaces in the image URL. Use commas or plus signs.
-              - ALWAYS write a short text explanation first, and then include the image.` 
+              1. If the user asks for a 2D chart (like a pie chart, bar chart, or line graph), you MUST write Chart.js code.
+                 Use this exact format:
+                 <div class="ai-visual">
+                   <canvas id="chart-canvas" style="width:100%; height:100%;"></canvas>
+                   <script>
+                     const ctx = document.getElementById('chart-canvas').getContext('2d');
+                     new Chart(ctx, {
+                       type: 'pie', // or 'bar', 'line'
+                       data: {
+                         labels: ['A', 'B', 'C'],
+                         datasets: [{ data: [10, 20, 30], backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe'] }]
+                       },
+                       options: { responsive: true, maintainAspectRatio: false }
+                     });
+                   <\/script>
+                 </div>
+
+              2. If the user asks for a 3D graph or 3D animation, you MUST write Three.js code.
+                 Use this exact format:
+                 <div class="ai-visual">
+                   <div id="3d-box" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center;"></div>
+                   <script>
+                     const scene = new THREE.Scene();
+                     const camera = new THREE.PerspectiveCamera(75, 600 / 350, 0.1, 1000);
+                     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                     renderer.setSize(600, 350);
+                     document.getElementById('3d-box').appendChild(renderer.domElement);
+                     
+                     // Add a shape (Cube, Sphere, Torus, etc.)
+                     const geometry = new THREE.BoxGeometry(2, 2, 2);
+                     const material = new THREE.MeshNormalMaterial();
+                     const mesh = new THREE.Mesh(geometry, material);
+                     scene.add(mesh);
+                     
+                     camera.position.z = 5;
+                     
+                     function animate() {
+                       requestAnimationFrame(animate);
+                       mesh.rotation.x += 0.01;
+                       mesh.rotation.y += 0.01;
+                       renderer.render(scene, camera);
+                     }
+                     animate();
+                   <\/script>
+                 </div>
+
+              3. ALWAYS write a short, helpful text explanation first, and then provide the visual code. Do not put the code inside markdown blocks like \`\`\`html. Just output the raw HTML.` 
             }
         ];
 
@@ -67,5 +108,4 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// ⚠️ THIS IS THE VERCEL EXPORT
 module.exports = app;
