@@ -12,7 +12,7 @@ let chatHistory = [];
 app.post('/api/chat', async (req, res) => {
     try {
         const userMessage = req.body.message;
-        const role = req.body.role || "helpful expert";
+        const role = req.body.role || "helpful assistant";
 
         let messages = [
             { 
@@ -24,19 +24,19 @@ app.post('/api/chat', async (req, res) => {
               - If you show math, use standard LaTeX formatting wrapped in single dollar signs (e.g., $x = 5$).
 
               VISUAL RULES (Very Important):
-              1. If the user asks for a 2D chart (like a pie chart, bar chart, or line graph), you MUST write Chart.js code.
-                 Use this exact format:
+              1. If the user asks for a 2D chart (like a pie chart, bar chart, or line graph), you MUST write Chart.js code. 
+                 Use this exact format, and DO NOT include any base64 image data:
                  <div class="ai-visual">
                    <canvas id="chart-canvas" style="width:100%; height:100%;"></canvas>
                    <script>
                      const ctx = document.getElementById('chart-canvas').getContext('2d');
                      new Chart(ctx, {
-                       type: 'pie', // or 'bar', 'line'
+                       type: 'pie', 
                        data: {
-                         labels: ['A', 'B', 'C'],
-                         datasets: [{ data: [10, 20, 30], backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe'] }]
+                         labels: ['Apple', 'Samsung', 'Xiaomi'],
+                         datasets: [{ data: [30, 40, 30], backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe'] }]
                        },
-                       options: { responsive: true, maintainAspectRatio: false }
+                       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'white' } } } }
                      });
                    <\/script>
                  </div>
@@ -52,7 +52,6 @@ app.post('/api/chat', async (req, res) => {
                      renderer.setSize(600, 350);
                      document.getElementById('3d-box').appendChild(renderer.domElement);
                      
-                     // Add a shape (Cube, Sphere, Torus, etc.)
                      const geometry = new THREE.BoxGeometry(2, 2, 2);
                      const material = new THREE.MeshNormalMaterial();
                      const mesh = new THREE.Mesh(geometry, material);
@@ -70,7 +69,7 @@ app.post('/api/chat', async (req, res) => {
                    <\/script>
                  </div>
 
-              3. ALWAYS write a short, helpful text explanation first, and then provide the visual code. Do not put the code inside markdown blocks like \`\`\`html. Just output the raw HTML.` 
+              3. ALWAYS write a short text explanation first, and then provide the visual code inside the <div class="ai-visual"> tags. NEVER output base64 images. Do not put the code inside markdown blocks like \`\`\`html.` 
             }
         ];
 
@@ -108,4 +107,5 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
+// ⚠️ THIS IS THE VERCEL EXPORT
 module.exports = app;
