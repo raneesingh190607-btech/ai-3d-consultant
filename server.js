@@ -9,7 +9,7 @@ app.use(express.json());
 
 let chatHistory = [];
 
-app.post('/chat', async (req, res) => {
+app.post('/api/chat', async (req, res) => {
     try {
         const userMessage = req.body.message;
         const role = req.body.role || "helpful expert";
@@ -27,6 +27,7 @@ app.post('/chat', async (req, res) => {
               VISUAL RULES:
               - If the user asks for a 3D visual, DO NOT generate complex models. ONLY use basic shapes (BoxGeometry, SphereGeometry, TorusGeometry, CylinderGeometry).
               - You MUST output the visual inside <div class="ai-visual"> ... </div>.
+              - CRITICAL WARNING: You MUST include the <script> tags and the animate() function inside the visual block. If you forget the <script> tags, the app will fail and crash.
               - YOU MUST USE THIS EXACT TEMPLATE FOR 3D (replace shape/color as needed):
               
               <div class="ai-visual">
@@ -93,6 +94,5 @@ app.post('/chat', async (req, res) => {
     }
 });
 
-app.listen(3000, () => {
-    console.log('Server is running on http://localhost:3000');
-});
+// ⚠️ THIS IS THE VERCEL EXPORT (No app.listen)
+module.exports = app;
